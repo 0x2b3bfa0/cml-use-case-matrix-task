@@ -1,5 +1,7 @@
 # Matrix use case — task resource
 
+⚠️ **See also [0x2b3bfa0/cml-use-case-matrix-task](https://github.com/0x2b3bfa0/cml-use-case-matrix-task) for the legacy counterpart.**
+
 See [`cml.yml`](https://github.com/0x2b3bfa0/cml-use-case-matrix-task/blob/702570f99addc75a56267899f3bcead92d02061a/.github/workflows/cml.yml) and [`tpi.tf`](https://github.com/0x2b3bfa0/cml-use-case-matrix-task/blob/702570f99addc75a56267899f3bcead92d02061a/tpi.tf) for more information.
 
 ## Secrets
