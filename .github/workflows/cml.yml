@@ -1,0 +1,63 @@
+on: pull_request
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+  TF_VAR_name: ${{ github.run_id }}
+  TF_VAR_parallelism: 4
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: |
+          terraform init
+          terraform apply --auto-approve
+        env:
+          CML_RUNNER_LABELS: cml-matrix-${{ github.run_id }}
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+      - uses: actions/upload-artifact@v2
+        with:
+          name: state
+          path: terraform.tfstate
+  debug:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: state
+      - run: |
+          terraform init
+          while sleep 8; do
+            terraform refresh
+            terraform show
+          done
+  train:
+    needs: deploy
+    strategy:
+      matrix:
+        epochs: [3, 5, 7, 9]
+    runs-on: cml-matrix-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v2
+      - uses: iterative/setup-cml@v1
+      - run: |
+          echo "$MATRIX_EPOCH" > epoch.txt
+          cml pr epoch.txt
+        env:
+          MATRIX_EPOCH: ${{ matrix.epoch }}
+          REPO_TOKEN: ${{ secrets.REPO_TOKEN }}
+  destroy:
+    if: always()
+    needs: train
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+        with:
+          name: state
+      - run: |
+          terraform init
+          terraform destroy --auto-approve
